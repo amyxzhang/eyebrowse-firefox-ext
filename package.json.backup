@@ -1,0 +1,8 @@
+{
+  "name": "eyebrowse-firefox-ext",
+  "fullName": "Eyebrowse",
+  "description": "Eyebrowse by CSAIL",
+  "author": "joshblum",
+  "license": "MPL 2.0",
+  "version": "0.1"
+}
