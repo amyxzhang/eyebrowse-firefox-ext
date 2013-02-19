@@ -201,7 +201,7 @@ self.port.on("show", function onShow(data) {
     navView =  new NavView();
     loginView = new LoginView(); 
     var homeView;
-    if (loggedIn{
+    if (loggedIn){
         homeView = new HomeView();
     }
     $(document).click('#home_tab', function(){
