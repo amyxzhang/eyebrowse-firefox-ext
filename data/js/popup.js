@@ -34,6 +34,7 @@ LoginView = Backbone.View.extend({
 
     getLogin : function() {
         $('#errors').fadeOut();
+        $('#login').button('loading')
         var self = this;
         var username = $('#id_username').val();
         var password = $('#id_password').val();
@@ -54,30 +55,76 @@ LoginView = Backbone.View.extend({
             match = match[0]
             var csrfmiddlewaretoken = match.slice(match.indexOf("value=") + 7, match.length-1); // grab the csrf token
             //now call the server and login
-            $.ajax({
-                url: url_login(),
-                type: "POST",
-                data: {
-                        "username": username,
-                        "password": password,
-                        "csrfmiddlewaretoken" : csrfmiddlewaretoken,
-                        "remember_me": 'on', // for convenience
-                },
-                dataType: "html",
-                success: function(data) {
-                    var match = data.match(REGEX)
-                    if(match) { // we didn't log in successfully
+            // $.ajax({
+            //     headers: {
+            //         // Send the token to same-origin, relative URLs only.
+            //             // Send the token only if the method warrants CSRF protection
+            //             // Using the CSRFToken value acquired earlier
+            //             "x-csrftoken": csrfmiddlewaretoken,
+            //     },
+            //     xhrFields: {
+            //         // The 'xhrFields' property sets additional fields on the XMLHttpRequest.
+            //         // This can be used to set the 'withCredentials' property.
+            //         // Set the value to 'true' if you'd like to pass cookies to the server.
+            //         // If this is enabled, your server must respond with the header
+            //         // 'Access-Control-Allow-Credentials: true'.
+            //         withCredentials: true,
+            //     },
+            //     url: url_login(),
+            //     type: "POST",
+            //     data: {
+            //             "username": username,
+            //             "password": password,
+            //             "csrfmiddlewaretoken" : csrfmiddlewaretoken,
+            //             "remember_me": 'on', // for convenience
+            //     },
+            //     dataType: "html",
+            //     success: function(data, textStatus, jqXHR) {
+            //         var match = data.match(REGEX)
+            //         if(match) { // we didn't log in successfully
                         
-                        self.displayErrors("Invalid username or password");
-                    } else {
+            //             self.displayErrors("Invalid username or password");
+            //         } else {
                         
-                        self.completeLogin(username)
-                    }
-                },
-                error : function(data) {
-                    self.displayErrors("Unable to connect, try again later.")
+            //             self.completeLogin(username)
+            //         }
+            //     },
+            //     error : function(jqXHR, textStatus, errorThrown) {
+            //         console.log(JSON.stringify(arguments))
+            //         self.displayErrors("Unable to connect, try again later.")
+            //     }
+            // });
+            var url = url_login();
+
+            var xhr = createCORSRequest('POST', url);
+            if (!xhr) {
+                console.log('CORS not supported');
+                return;
+            }
+            xhr.setRequestHeader('X-CSRFToken', csrfmiddlewaretoken);
+            xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            // xhr.withCredentials = true;
+
+            // Response handlers.
+            xhr.onload = function() {
+                console.log(JSON.stringify(xhr))
+                var text = xhr.responseText;
+                var match = data.match(REGEX)
+                console.log("res text", text)
+                if(match) { // we didn't log in successfully
+                    self.displayErrors("Invalid username or password");
+                } else {
+                    self.completeLogin(username)
                 }
-            });
+            };
+
+            xhr.onerror = function() {
+
+                console.log("err args", JSON.stringify(arguments));
+            };
+            var params = "username=" + username + "&password=" + password + "&csrfmiddlewaretoken=" + csrfmiddlewaretoken + "&remember_me=on";
+            xhr.send(params)
+            console.log(JSON.stringify(xhr))
         }
         else {
             self.completeLogin(username);
@@ -85,7 +132,6 @@ LoginView = Backbone.View.extend({
     },
 
     completeLogin : function(username) {
-        //chrome.extension.getBackgroundPage().console.log("LoginView.completeLogin: evaluating.");
         $('#login_container').remove();
         $('body').css('width', '400px');
 
@@ -116,7 +162,8 @@ LoginView = Backbone.View.extend({
     },
 
     displayErrors : function(errorMsg) {
-        $errorDiv = $('#errors');
+        $('#login').button('reset');
+        var $errorDiv = $('#errors');
         $errorDiv.html(errorMsg);
         $errorDiv.fadeIn();
     },
@@ -190,7 +237,25 @@ function url_logout() {
     return baseUrl + '/accounts/logout/'
 }
 
-     
+////////////// AJAX CSRF PROTECTION///////////
+
+// Create the XHR object.
+function createCORSRequest(method, url) {
+  var xhr = new XMLHttpRequest();
+  if ("withCredentials" in xhr) {
+    // XHR for Chrome/Firefox/Opera/Safari.
+    xhr.open(method, url, true);
+  } else if (typeof XDomainRequest != "undefined") {
+    // XDomainRequest for IE.
+    xhr = new XDomainRequest();
+    xhr.open(method, url);
+  } else {
+    // CORS not supported.
+    xhr = null;
+  }
+  return xhr;
+}
+  
 // Listen for the "show" event being sent from the
 // main add-on code. It means that the panel's about
 // to be shown.
