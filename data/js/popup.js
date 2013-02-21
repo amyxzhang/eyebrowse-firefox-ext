@@ -7,7 +7,7 @@ LoginView = Backbone.View.extend({
     },
 
     render : function() {
-        if (!false){//user.isLoggedIn()) {
+        if (!loggedIn) {
             $('.content-container').empty();
             $('body').css('width', '300px');
             var template = _.template($("#login_template").html(), {
@@ -66,85 +66,49 @@ LoginView = Backbone.View.extend({
                 },
                 // dataType: "html",
                 success: function(data, textStatus, jqXHR) {
-                    console.log("success", JSON.stringify(data))
                     var match = data.match(REGEX)
                     if(match) { // we didn't log in successfully
                         
                         self.displayErrors("Invalid username or password");
                     } else {
-                        
-                        self.completeLogin(username)
+                        data = JSON.parse(data);
+                        console.log(JSON.stringify(data))
+                        self.completeLogin(username, csrfmiddlewaretoken, data.sessionid);
                     }
                 },
                 error : function(jqXHR, textStatus, errorThrown) {
-                    console.log(JSON.stringify(arguments))
                     self.displayErrors("Unable to connect, try again later.")
                 }
             });
-            // var url = url_login();
-
-            // var xhr = createCORSRequest('POST', url);
-            // if (!xhr) {
-            //     console.log('CORS not supported');
-            //     return;
-            // }
-            // xhr.setRequestHeader('X-CSRFToken', csrfmiddlewaretoken);
-            // xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-            // // xhr.withCredentials = true;
-
-            // // Response handlers.
-            // xhr.onload = function() {
-            //     console.log(JSON.stringify(xhr))
-            //     var text = xhr.responseText;
-            //     var match = data.match(REGEX)
-            //     console.log("res text", text)
-            //     if(match) { // we didn't log in successfully
-            //         self.displayErrors("Invalid username or password");
-            //     } else {
-            //         self.completeLogin(username)
-            //     }
-            // };
-
-            // xhr.onerror = function() {
-
-            //     console.log("err args", JSON.stringify(arguments));
-            // };
-            // var params = "username=" + username + "&password=" + password + "&csrfmiddlewaretoken=" + csrfmiddlewaretoken + "&remember_me=on";
-            // xhr.send(params)
-            // console.log(JSON.stringify(xhr))
-        }
-        else {
+        } else {
             self.completeLogin(username);
         }
     },
 
-    completeLogin : function(username) {
-        $('#login_container').remove();
-        $('body').css('width', '400px');
+    completeLogin : function(username, csrftoken, sessionid) {
 
-        user.login();
-        user.setUsername(username);
+        if (csrftoken) { 
+            userChange('setCSRFToken', csrftoken);
+        }
+        if (sessionid) { 
+            userChange('setSessionId', sessionid);
+        }
+
+        $('#login_container').remove();
+
+        loggedIn = true;
+        userChange('login');
+        userChange('setUsername', username);
         navView.render('home_tab');
         homeView = new HomeView();
         
-        //
         // Update user attributes in localStorage
-        //
-        user.getBlacklist().fetch({
-            success: function (data) {
-                user.saveState();
-            }
-        });
-        user.getWhitelist().fetch({
-            success: function (data) {
-                user.saveState();
-            }
-        });
+        userChange('completeLogin')
     },
 
     logout : function() {
         $.get(url_logout());
-        user.logout();
+        userChange('logout');
         this.render();
     },
 
@@ -167,7 +131,7 @@ NavView = Backbone.View.extend({
 
     render : function(tab) {
         $('.nav-container').empty();
-        var loggedIn = false;//user.isLoggedIn();
+        var loggedIn = loggedIn;
         var template = _.template($("#nav_template").html(), {
                 baseUrl : 'baseUrl',
                 loggedIn : loggedIn,
@@ -190,7 +154,7 @@ HomeView = Backbone.View.extend({
     },
 
     render : function() {
-        if (!user.isLoggedIn()) {
+        if (!loggedIn) {
             return
         }
         var template = _.template($("#splash_template").html());
@@ -210,8 +174,7 @@ function clickHandle(e) {
 
 function doLogout() {
     $.get(url_logout());
-    user.logout();
-    backpage.clearLocalStorage('user')
+    userChange('logout');
     loginView.render();
 }    
 
@@ -253,10 +216,16 @@ function ajaxWrapper(args){
         url = addProxyParam(args.url, cookies);
     }
     args.url = url
-    console.log("url:", JSON.stringify(url))
-    console.log("args:", JSON.stringify(args))
     $.ajax(args);
-    console.log("complete?")
+}
+
+///////SEND USER ACTIONS TO CONTENT SCRIPT //////
+
+function userChange(func, arg){
+    self.port.emit("userChange", {
+        'func': func,
+        'arg': arg,
+    });
 }
 
 
@@ -264,22 +233,19 @@ function ajaxWrapper(args){
 // main add-on code. It means that the panel's about
 // to be shown.
 self.port.on("show", function onShow(data) {
-    if (!data.opened) {
-        baseUrl = data.baseUrl;
-        proxyUrl = data.proxyUrl;
-        loggedIn = data.loggedIn; //user login state
-        user = data.user;
-        navView =  new NavView();
-        loginView = new LoginView(); 
-        var homeView;
-        if (loggedIn){
-            homeView = new HomeView();
-        }
-        $(document).click('#home_tab', function(){
-            if (homeView != undefined) {
-                homeView.render();
-            }
-        });
-        $('a').click(clickHandle)  
+    baseUrl = data.baseUrl;
+    proxyUrl = data.proxyUrl;
+    loggedIn = data.loggedIn; //user login state
+    navView =  new NavView();
+    loginView = new LoginView(); 
+    var homeView;
+    if (loggedIn){
+        homeView = new HomeView();
     }
+    $(document).click('#home_tab', function(){
+        if (homeView != undefined) {
+            homeView.render();
+        }
+    });
+    $('a').click(clickHandle);
 });
