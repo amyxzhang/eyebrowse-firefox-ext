@@ -88,7 +88,7 @@ LoginView = Backbone.View.extend({
             userChange('setCookie', 'csrftoken', csrftoken);
         }
         if (sessionid) { 
-            userChange('setCookie', 'sessionid', sessionid);
+            userChange('setCookie', 'sesionid', sessionid);
         }
 
         $('#login_container').remove();
@@ -202,24 +202,20 @@ function getCookies(data){
     return cookies
 }
 
-function ajaxWrapper(params){
-    if (!params.url){
-        console.error('ajax request made without url');
-        return false;
-    }
-    var data = params.data || {};
+function ajaxWrapper(args){
+    var data = args.data || {};
     var cookies = getCookies(data);
     var url;
-    if (params.type === "GET") {
+    if (args.type === "GET") {
         data.cookies = cookies
-        data.proxy_url = params.url;    
-        params.data = data;
+        data.proxy_url = args.url;    
+        args.data = data;
         url = proxy_url();
     } else {
-        url = addProxyParam(params.url, cookies);
+        url = addProxyParam(args.url, cookies);
     }
-    params.url = url
-    $.ajax(params);
+    args.url = url
+    $.ajax(args);
 }
 
 
