@@ -88,7 +88,7 @@ LoginView = Backbone.View.extend({
             userChange('setCookie', 'csrftoken', csrftoken);
         }
         if (sessionid) { 
-            userChange('setCookie', 'sesionid', sessionid);
+            userChange('setCookie', 'sessionid', sessionid);
         }
 
         $('#login_container').remove();
