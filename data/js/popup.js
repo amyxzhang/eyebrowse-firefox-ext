@@ -64,15 +64,13 @@ LoginView = Backbone.View.extend({
                         "csrfmiddlewaretoken" : csrfmiddlewaretoken,
                         "remember_me": 'on', // for convenience
                 },
-                // dataType: "html",
                 success: function(data, textStatus, jqXHR) {
                     var match = data.match(REGEX)
                     if(match) { // we didn't log in successfully
-                        
                         self.displayErrors("Invalid username or password");
-                    } else {
+                    } else {    
                         data = JSON.parse(data);
-                        console.log(JSON.stringify(data))
+
                         self.completeLogin(username, csrfmiddlewaretoken, data.sessionid);
                     }
                 },
@@ -86,24 +84,25 @@ LoginView = Backbone.View.extend({
     },
 
     completeLogin : function(username, csrftoken, sessionid) {
-
         if (csrftoken) { 
-            userChange('setCSRFToken', csrftoken);
+            userChange('setCookie', 'csrftoken', csrftoken);
         }
         if (sessionid) { 
-            userChange('setSessionId', sessionid);
+            userChange('setCookie', 'sessionid', sessionid);
         }
 
         $('#login_container').remove();
 
         loggedIn = true;
+
         userChange('login');
+
         userChange('setUsername', username);
         navView.render('home_tab');
         homeView = new HomeView();
         
         // Update user attributes in localStorage
-        userChange('completeLogin')
+        userChange('completeLogin');
     },
 
     logout : function() {
@@ -198,33 +197,39 @@ function addProxyParam(url, cookies){
 }
 
 function getCookies(data){
-    var cookies = {}
+    var cookies = {};
     cookies.csrftoken = data.csrfmiddlewaretoken;
     return cookies
 }
 
-function ajaxWrapper(args){
-    var data = args.data || {};
+function ajaxWrapper(params){
+    if (!params.url){
+        console.error('ajax request made without url');
+        return false;
+    }
+    var data = params.data || {};
     var cookies = getCookies(data);
     var url;
-    if (args.type === "GET") {
+    if (params.type === "GET") {
         data.cookies = cookies
-        data.proxy_url = args.url;    
-        args.data = data;
+        data.proxy_url = params.url;    
+        params.data = data;
         url = proxy_url();
     } else {
-        url = addProxyParam(args.url, cookies);
+        url = addProxyParam(params.url, cookies);
     }
-    args.url = url
-    $.ajax(args);
+    params.url = url
+    $.ajax(params);
 }
+
 
 ///////SEND USER ACTIONS TO CONTENT SCRIPT //////
 
-function userChange(func, arg){
+function userChange(func, args){
+    var args = Array.prototype.slice.call(arguments, 1); // if any args present
     self.port.emit("userChange", {
         'func': func,
-        'arg': arg,
+        'args': args,
     });
 }
 
