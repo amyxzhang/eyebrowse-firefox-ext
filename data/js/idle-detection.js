@@ -1,9 +1,8 @@
 function sendMessage(action) {
     var message = {
-            'action' : 'idle',
             'type': action,
     };
-    chrome.extension.sendMessage(JSON.stringify(message));
+    self.port.emit("idle", JSON.stringify(message));
 }
 /*
     https://github.com/jasonmcleod/jquery.idle
@@ -19,4 +18,4 @@ $(window).idle(
     },  
     {
         'after': 50000, //5 min max idle
-    });
+});
