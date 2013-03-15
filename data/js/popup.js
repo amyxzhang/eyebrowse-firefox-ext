@@ -167,7 +167,7 @@ function clickHandle(e) {
     if (url.indexOf("logout") !== -1) {
         doLogout();          
     } else {
-        backpage.openLink(url)    
+        self.port.emit("openLink", { "url" : url});
     }
 }
 
