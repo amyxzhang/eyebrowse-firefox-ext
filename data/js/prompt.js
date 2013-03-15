@@ -1,4 +1,8 @@
-function setup(baseUrl, host) {
+/*
+    Call the eyebrowse server to get an iframe with a prompt
+    Can either be a login or track type prompt. 
+*/
+function setup(baseUrl, promptType, host) {
     if ($("#eyebrowse-frame").length) {
         $("#eyebrowse-frame").css("z-index", 999999999);
         return;
@@ -14,20 +18,29 @@ function setup(baseUrl, host) {
         "right": "0px",
         "top": "0px",
     };
-    var eyebrowseFrame = $("<iframe>").css(settings).attr("id", "eyebrowse-frame").attr("src", baseUrl + "/ext/?site=" + host);
+    var eyebrowseFrame = $("<iframe>").css(settings).attr("id", "eyebrowse-frame").attr("src", baseUrl + "/ext/" +  promptType +"?site=" + host + "&src=firefox");
 
     $("body").append(eyebrowseFrame);
 }
 
+
 self.port.on("prompt", function(data) {
-    var baseUrl = data.baseUrl;
     var host = window.location.host;
-    setup(baseUrl, host);
-    
-    window.addEventListener('message', function(e){
-        var message = JSON.parse(e.data);
-        message.action = "filterlist";
-        message.url = host;
-        self.port.emit("filterlist", JSON.stringify(message));
-    }, false);
+    setup(data.baseUrl, data.type, host);
+    if (data.action === "prompt") {
+        setup(request.baseUrl, request.type, host);
+        
+        window.addEventListener("message", function(e){
+            if (e.origin === request.baseUrl){
+                var msg = JSON.parse(e.data);
+                if (msg.action === "fade"){
+                     $("#eyebrowse-frame").remove()
+                } else {
+                    msg.url = host;
+                    self.port.emit("promptRes", JSON.stringify(msg));
+                   
+                }
+            }
+        }, false);
+    }
 });
