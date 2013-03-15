@@ -11,7 +11,7 @@ LoginView = Backbone.View.extend({
             $('.content-container').empty();
             $('body').css('width', '300px');
             var template = _.template($("#login_template").html(), {
-                    'baseUrl' : 'baseUrl',
+                    'baseUrl' : baseUrl,
                 });
 
             $(this.el).html(template);
@@ -130,9 +130,8 @@ NavView = Backbone.View.extend({
 
     render : function(tab) {
         $('.nav-container').empty();
-        var loggedIn = loggedIn;
         var template = _.template($("#nav_template").html(), {
-                baseUrl : 'baseUrl',
+                baseUrl : baseUrl,
                 loggedIn : loggedIn,
             });
 

@@ -1,8 +1,8 @@
 function sendMessage(action) {
-    var message = {
+    var msg = {
             'type': action,
     };
-    self.port.emit("idle", JSON.stringify(message));
+    self.port.emit("idleRes", JSON.stringify(msg));
 }
 
 
@@ -11,7 +11,6 @@ self.port.on("idle", function(data) {
         https://github.com/jasonmcleod/jquery.idle
         Detect if the current tab is idle or not and close/open the active item respectively. 
     */
-    console.log("IDLE INSIDE")
     $(window).idle(
         function() {
            sendMessage('closeItem'); //on idle 

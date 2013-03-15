@@ -25,7 +25,6 @@ function setup(baseUrl, promptType, host) {
 
 
 self.port.on("prompt", function(data) {
-    console.log("data:::", JSON.stringify(data))
     if (data.action === "prompt") {
         var host = window.location.host;
         setup(data.baseUrl, data.type, host);
@@ -33,7 +32,6 @@ self.port.on("prompt", function(data) {
         window.addEventListener("message", function(e){
             if (e.origin === data.baseUrl){
                 var msg = JSON.parse(e.data);
-                console.log("MSG:::", JSON.stringify(msg))
                 if (msg.action === "fade"){
                      $("#eyebrowse-frame").remove()
                 } else {
