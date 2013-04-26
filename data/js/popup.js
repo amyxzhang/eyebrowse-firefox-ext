@@ -68,7 +68,7 @@ LoginView = Backbone.View.extend({
                     var match = data.match(REGEX)
                     if(match) { // we didn't log in successfully
                         self.displayErrors("Invalid username or password");
-                    } else {    
+                    } else {
                         data = JSON.parse(data);
 
                         self.completeLogin(username, csrfmiddlewaretoken, data.sessionid);
