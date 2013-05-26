@@ -34,7 +34,7 @@ self.port.on("prompt", function(data) {
                 var msg = JSON.parse(e.data);
                 if (msg.action === "fade"){
                      $("#eyebrowse-frame").remove()
-                     self.port.emit("promptRes", JSON.stringify({"action":"nag","url":host}))
+                     self.port.emit("promptRes", JSON.stringify({"action":"nag","url":window.document.URL}))
                 } else {
                     msg.url = host;
                     self.port.emit("promptRes", JSON.stringify(msg));
